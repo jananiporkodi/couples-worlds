@@ -1,0 +1,76 @@
+<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A couple sitting together under the moon">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1A1A1A" />
+      <stop offset="100%" stop-color="#2E2E2C" />
+    </linearGradient>
+    <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FAFAF8" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#FAFAF8" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#232323" />
+      <stop offset="100%" stop-color="#141414" />
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="800" height="500" fill="url(#sky)" />
+
+  <g opacity="0.9">
+    <circle cx="120" cy="70" r="1.6" fill="#FAFAF8" />
+    <circle cx="200" cy="40" r="1.2" fill="#FAFAF8" />
+    <circle cx="260" cy="90" r="1.8" fill="#FAFAF8" />
+    <circle cx="340" cy="50" r="1.2" fill="#FAFAF8" />
+    <circle cx="420" cy="30" r="1.6" fill="#FAFAF8" />
+    <circle cx="500" cy="70" r="1.2" fill="#FAFAF8" />
+    <circle cx="580" cy="45" r="1.8" fill="#FAFAF8" />
+    <circle cx="650" cy="85" r="1.2" fill="#FAFAF8" />
+    <circle cx="720" cy="55" r="1.6" fill="#FAFAF8" />
+    <circle cx="90" cy="140" r="1.2" fill="#FAFAF8" />
+    <circle cx="740" cy="130" r="1.2" fill="#FAFAF8" />
+  </g>
+
+  <circle cx="580" cy="110" r="90" fill="url(#moonGlow)" />
+  <circle cx="580" cy="110" r="46" fill="#FAFAF8" />
+  <circle cx="598" cy="96" r="46" fill="#2E2E2C" opacity="0.94" />
+
+  <rect x="0" y="300" width="800" height="200" fill="url(#water)" />
+  <g opacity="0.5" stroke="#FAFAF8" stroke-width="1">
+    <line x1="520" y1="305" x2="640" y2="305" />
+    <line x1="500" y1="320" x2="660" y2="320" />
+    <line x1="530" y1="335" x2="630" y2="335" />
+  </g>
+
+  <path d="M0 300 Q 60 292 120 300 T 240 300 T 360 300 T 480 300 T 600 300 T 720 300 T 800 300 V500 H0 Z" fill="#3A2E28" opacity="0.35" />
+
+  <g transform="translate(430,330)">
+    <ellipse cx="90" cy="150" rx="150" ry="20" fill="#C1443A" opacity="0.12" />
+    <path d="M-40 150 L220 150 L 200 100 L -20 100 Z" fill="#C1443A" opacity="0.85" />
+    <path d="M-20 100 L200 100 L190 90 L -10 90 Z" fill="#F6DEDC" opacity="0.9" />
+
+    <ellipse cx="150" cy="118" rx="10" ry="9" fill="#232323" />
+    <rect x="140" y="112" width="20" height="10" rx="2" fill="#F6DEDC" />
+
+    <g transform="translate(55,60)">
+      <ellipse cx="0" cy="55" rx="26" ry="30" fill="#232323" />
+      <circle cx="-2" cy="15" r="15" fill="#3A2E28" />
+    </g>
+    <g transform="translate(95,58)">
+      <ellipse cx="0" cy="55" rx="24" ry="30" fill="#4A3A32" />
+      <circle cx="2" cy="12" r="14" fill="#232323" />
+    </g>
+
+    <g stroke="#F6DEDC" stroke-width="1.4" fill="none" opacity="0.8">
+      <path d="M-60 20 q10 -14 20 0" />
+      <path d="M170 10 q10 -14 20 0" />
+      <path d="M10 -20 q10 -14 20 0" />
+    </g>
+  </g>
+
+  <g fill="#F6DEDC" opacity="0.9">
+    <circle cx="60" cy="420" r="4" />
+    <circle cx="120" cy="440" r="3" />
+    <circle cx="740" cy="430" r="4" />
+    <circle cx="690" cy="450" r="3" />
+  </g>
+</svg>
