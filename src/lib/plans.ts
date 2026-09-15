@@ -1,10 +1,15 @@
 import type { Plan, PlanState } from "./types";
 import { daysUntil } from "./dates";
 
-/** Derives the real-world state of a plan: upcoming, completed (linked to a memory), missed (past with no memory), or explicitly cancelled. */
+/**
+ * Derives the real-world state of a plan: cancelled/completed/missed can be set explicitly (via the
+ * "mark done" / "mark missed" / "cancel" actions) or linking a memory; otherwise it's inferred from
+ * the date - past and still "planned" reads as missed, future reads as upcoming.
+ */
 export function getPlanState(plan: Plan): PlanState {
   if (plan.status === "cancelled") return "cancelled";
-  if (plan.memory_id) return "completed";
+  if (plan.status === "done" || plan.memory_id) return "completed";
+  if (plan.status === "missed") return "missed";
   const remaining = daysUntil(plan.plan_date);
   if (remaining < 0) return "missed";
   return "upcoming";

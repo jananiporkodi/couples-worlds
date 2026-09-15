@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Caveat, Patrick_Hand, Quicksand, Playfair_Display, Lora, Baloo_2, Work_Sans } from "next/font/google";
 import "./globals.css";
 import { getSettingsMap } from "@/lib/data";
@@ -49,9 +49,20 @@ const workSans = Work_Sans({
 export const metadata: Metadata = {
   title: "Our Little World",
   description: "A private home for our memories, dreams, and everything in between.",
+  manifest: "/manifest.json",
   icons: {
     icon: "/favicon.svg",
+    apple: "/apple-touch-icon.png",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Our World",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#C1443A",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -80,6 +91,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 var theme = localStorage.getItem('olw-theme');
                 if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                   document.documentElement.classList.add('dark');
+                }
+              } catch (e) {}
+              try {
+                if ('clearAppBadge' in navigator) {
+                  navigator.clearAppBadge();
+                  document.addEventListener('visibilitychange', function () {
+                    if (document.visibilityState === 'visible') navigator.clearAppBadge();
+                  });
                 }
               } catch (e) {}
             `,

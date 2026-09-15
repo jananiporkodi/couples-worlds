@@ -70,7 +70,7 @@ export default function LockScreen({
                 type="button"
                 onClick={() => setPartner("partner_a")}
                 className={`flex-1 px-3 py-2 text-xs font-semibold transition ${
-                  partner === "partner_a" ? "bg-ink text-white" : "text-ink-soft"
+                  partner === "partner_a" ? "bg-bezel text-white" : "text-ink-soft"
                 }`}
               >
                 {partnerNames.a}
@@ -79,7 +79,7 @@ export default function LockScreen({
                 type="button"
                 onClick={() => setPartner("partner_b")}
                 className={`flex-1 px-3 py-2 text-xs font-semibold transition ${
-                  partner === "partner_b" ? "bg-ink text-white" : "text-ink-soft"
+                  partner === "partner_b" ? "bg-bezel text-white" : "text-ink-soft"
                 }`}
               >
                 {partnerNames.b}

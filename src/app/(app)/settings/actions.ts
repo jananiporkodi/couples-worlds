@@ -5,6 +5,37 @@ import { cookies } from "next/headers";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { PARTNER_COOKIE_NAME, PARTNER_MAX_AGE_SECONDS, isValidPartnerId } from "@/lib/auth";
 
+export interface PushSubscriptionJSON {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
+/** Registers this device for push notifications, tagged to whichever partner is currently identified on it. */
+export async function savePushSubscription(subscription: PushSubscriptionJSON) {
+  const partnerId = cookies().get(PARTNER_COOKIE_NAME)?.value;
+  if (!isValidPartnerId(partnerId)) return { ok: false, reason: "no-identity" as const };
+
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase.from("push_subscriptions").upsert(
+    {
+      partner_id: partnerId,
+      endpoint: subscription.endpoint,
+      p256dh: subscription.keys.p256dh,
+      auth: subscription.keys.auth,
+    },
+    { onConflict: "endpoint" }
+  );
+  if (error) throw error;
+  return { ok: true as const };
+}
+
+/** Unregisters this device from push notifications (e.g. when the user turns the toggle off). */
+export async function removePushSubscription(endpoint: string) {
+  if (!endpoint) return;
+  const supabase = getSupabaseServerClient();
+  await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
+}
+
 export async function updateSettings(formData: FormData) {
   const relationshipStartDate = String(formData.get("relationshipStartDate") ?? "").trim();
   const anniversaryDate = String(formData.get("anniversaryDate") ?? "").trim();
@@ -36,7 +67,6 @@ export async function updateSettings(formData: FormData) {
   }
 
   revalidatePath("/settings");
-  revalidatePath("/us");
   revalidatePath("/");
 }
 

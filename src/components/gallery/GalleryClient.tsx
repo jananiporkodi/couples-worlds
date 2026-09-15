@@ -26,20 +26,63 @@ function SubmitButton() {
   );
 }
 
-function UploadForm({ onDone }: { onDone: () => void }) {
+const PERSON_OPTIONS = [
+  { key: "us", label: "us" },
+  { key: "him", label: "him" },
+  { key: "her", label: "her" },
+] as const;
+
+function UploadForm({
+  onDone,
+  defaultPerson,
+  defaultTags,
+}: {
+  onDone: () => void;
+  defaultPerson: (typeof PERSON_OPTIONS)[number]["key"];
+  defaultTags: string;
+}) {
   const formRef = useRef<HTMLFormElement>(null);
+  const [person, setPerson] = useState<(typeof PERSON_OPTIONS)[number]["key"]>(defaultPerson);
+
   return (
     <form
       ref={formRef}
       action={async (formData) => {
         await addGalleryPhotos(formData);
         formRef.current?.reset();
+        setPerson(defaultPerson);
         onDone();
       }}
       className="card-panel p-4 space-y-2.5 mb-5"
     >
       <input type="file" name="photos" accept="image/*,video/*" multiple className="input-field !py-2 text-xs" required />
       <input name="caption" placeholder="One caption for this batch (optional)" className="input-field" />
+      <input type="hidden" name="tags" value={defaultTags} />
+
+      <div>
+        <p className="text-[11px] text-ink-soft mb-1">who&apos;s this for?</p>
+        <div className="flex gap-1.5">
+          {PERSON_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => setPerson(opt.key)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition ${
+                person === opt.key ? "bg-bezel text-white" : "bg-black/[0.04] dark:bg-white/10 text-ink-soft"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <input type="hidden" name="person" value={person} />
+      </div>
+
+      <label className="flex items-center gap-1.5 text-xs text-ink-soft">
+        <input type="checkbox" name="favorite" className="accent-accent" />
+        add to our favorites too
+      </label>
+
       <div className="flex gap-2">
         <SubmitButton />
         <button type="button" onClick={onDone} className="btn-ghost !py-2 !px-3 text-sm">
@@ -54,6 +97,9 @@ export default function GalleryClient({ media }: { media: GalleryMedia[] }) {
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("favorites");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  const defaultPerson: (typeof PERSON_OPTIONS)[number]["key"] = tab === "his" ? "him" : tab === "hers" ? "her" : "us";
+  const defaultTags = tab === "trips" ? "trip" : tab === "selfies" ? "selfie" : "";
 
   const filtered = useMemo(() => {
     switch (tab) {
@@ -79,7 +125,7 @@ export default function GalleryClient({ media }: { media: GalleryMedia[] }) {
       <p className="text-sm text-ink-soft mb-5">every little moment, in one place</p>
 
       {uploading ? (
-        <UploadForm onDone={() => setUploading(false)} />
+        <UploadForm key={tab} onDone={() => setUploading(false)} defaultPerson={defaultPerson} defaultTags={defaultTags} />
       ) : (
         <button onClick={() => setUploading(true)} className="btn-ghost !py-2 !px-4 text-sm mb-5">
           + upload photos

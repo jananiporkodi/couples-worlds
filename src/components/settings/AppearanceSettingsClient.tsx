@@ -116,7 +116,7 @@ export default function AppearanceSettingsClient({ settings }: { settings: Recor
                 type="button"
                 onClick={() => setCornerStyle(c.key)}
                 className={`px-3 py-1.5 text-xs font-semibold ${
-                  cornerStyle === c.key ? "bg-ink text-white" : "text-ink-soft"
+                  cornerStyle === c.key ? "bg-bezel text-white" : "text-ink-soft"
                 }`}
               >
                 {c.label}

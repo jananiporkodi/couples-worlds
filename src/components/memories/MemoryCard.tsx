@@ -14,7 +14,7 @@ export default function MemoryCard({ memory, onOpen }: { memory: Memory; onOpen:
       {memory.is_favorite && <span className="absolute top-3 right-3 text-accent text-lg">♥</span>}
       {cover && (
         <div className="relative w-full h-44 rounded-xl overflow-hidden mb-3 bg-black/5">
-          <Image src={cover} alt={memory.title ?? ""} fill sizes="400px" className="object-cover" />
+          <Image src={cover} alt={memory.title ?? ""} fill sizes="400px" className="object-contain" />
           {extraCount > 0 && (
             <span className="absolute bottom-2 right-2 text-[10px] font-bold bg-black/55 text-white px-2 py-0.5 rounded-full">
               +{extraCount}

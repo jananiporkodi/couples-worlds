@@ -31,7 +31,7 @@ export default function BucketItemCard({ item }: { item: BucketItem }) {
           <p className="font-bold text-sm text-ink">{item.title}</p>
           {item.description && <p className="text-xs text-ink-soft mt-0.5 line-clamp-2">{item.description}</p>}
           <div className="flex flex-wrap items-center gap-1.5 mt-2">
-            <span className="chip bg-lavender text-ink">{categoryLabel}</span>
+            <span className="chip bg-lavender text-bezel">{categoryLabel}</span>
             <span
               className={`status-pill text-[10px] font-bold px-2.5 py-1 rounded-full ${
                 item.status === "done" ? "bg-sage-deep text-white" : "bg-black/5 dark:bg-white/10 text-ink-soft"

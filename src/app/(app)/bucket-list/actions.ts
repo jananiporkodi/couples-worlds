@@ -5,6 +5,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { buildIllustrationPrompt } from "@/lib/illustration";
 import { generateBucketArtwork } from "@/lib/artwork";
 import { uploadManyMediaFiles } from "@/lib/storage";
+import { notifyOtherPartner, getActorName } from "@/lib/push";
 import type { Priority } from "@/lib/types";
 
 export async function addBucketItem(formData: FormData) {
@@ -40,7 +41,10 @@ export async function addBucketItem(formData: FormData) {
   if (error) throw error;
 
   revalidatePath("/bucket-list");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
+
+  const actorName = await getActorName();
+  await notifyOtherPartner({ title: `${actorName} added to the bucket list`, body: title, url: "/bucket-list" });
 }
 
 export async function completeBucketItem(formData: FormData) {
@@ -99,7 +103,7 @@ export async function completeBucketItem(formData: FormData) {
   revalidatePath("/bucket-list");
   revalidatePath("/memories");
   revalidatePath("/gallery");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function deleteBucketItem(itemId: string) {

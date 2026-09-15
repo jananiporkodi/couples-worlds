@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { geocodePlace } from "@/lib/geocode";
+import { notifyOtherPartner, getActorName } from "@/lib/push";
 
 export async function addPlace(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -25,7 +26,10 @@ export async function addPlace(formData: FormData) {
   if (error) throw error;
 
   revalidatePath("/places");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
+
+  const actorName = await getActorName();
+  await notifyOtherPartner({ title: `${actorName} added a place`, body: name, url: "/places" });
 }
 
 export async function deletePlace(placeId: string) {
@@ -37,7 +41,7 @@ export async function deletePlace(placeId: string) {
 
   revalidatePath("/places");
   revalidatePath("/memories");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /** Manually corrects a place's pin position - used when the auto-geocoded spot lands in the wrong location. */
@@ -48,5 +52,5 @@ export async function updatePlaceCoords(placeId: string, lat: number, lng: numbe
   if (error) throw error;
 
   revalidatePath("/places");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }

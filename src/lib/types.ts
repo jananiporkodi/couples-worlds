@@ -51,6 +51,7 @@ export interface Note {
   author: string | null;
   body: string;
   mood: string | null;
+  pinned: boolean;
   created_at: string;
 }
 
@@ -73,13 +74,6 @@ export interface DailyQuestion {
   created_at: string;
 }
 
-export interface LoveJarEntry {
-  id: string;
-  body: string;
-  author: string | null;
-  created_at: string;
-}
-
 export interface Countdown {
   id: string;
   title: string;
@@ -94,7 +88,7 @@ export interface Setting {
   updated_at: string;
 }
 
-export type PlanStatus = "planned" | "done" | "cancelled";
+export type PlanStatus = "planned" | "done" | "missed" | "cancelled";
 export type PlanState = "upcoming" | "completed" | "missed" | "cancelled";
 export type PartnerAssignee = "partner_a" | "partner_b" | "both";
 
@@ -168,3 +162,29 @@ export const BUCKET_CATEGORIES = [
 ] as const;
 
 export const REACTION_EMOJIS = ["❤️", "🥹", "😂", "😍"] as const;
+
+export const EXPENSE_CATEGORIES = [
+  { key: "food", label: "Food & dining", emoji: "🍽" },
+  { key: "groceries", label: "Groceries", emoji: "🛒" },
+  { key: "travel", label: "Travel", emoji: "✈️" },
+  { key: "transport", label: "Transport", emoji: "🚗" },
+  { key: "entertainment", label: "Entertainment", emoji: "🎬" },
+  { key: "shopping", label: "Shopping", emoji: "🛍" },
+  { key: "bills", label: "Bills & utilities", emoji: "🧾" },
+  { key: "health", label: "Health", emoji: "💊" },
+  { key: "gifts", label: "Gifts", emoji: "🎁" },
+  { key: "home", label: "Home", emoji: "🏠" },
+  { key: "other", label: "Other", emoji: "✨" },
+] as const;
+
+export interface Expense {
+  id: string;
+  title: string;
+  amount: number;
+  category: string;
+  paid_by: "partner_a" | "partner_b";
+  is_shared: boolean;
+  expense_date: string;
+  notes: string | null;
+  created_at: string;
+}

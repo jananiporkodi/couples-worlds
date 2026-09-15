@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { updateSettings, setCurrentPartner } from "@/app/(app)/settings/actions";
 import { SaveButton, SavedConfirmation } from "./SaveControl";
+import PushNotificationToggle from "./PushNotificationToggle";
 
 export default function SettingsClient({
   settings,
@@ -39,6 +40,11 @@ export default function SettingsClient({
             {partnerBName}
           </button>
         </div>
+      </div>
+
+      <div className="card-panel p-4 mb-6 max-w-md">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-ink-soft mb-2">Notifications</p>
+        <PushNotificationToggle />
       </div>
 
       <form

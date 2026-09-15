@@ -20,7 +20,10 @@ const config: Config = {
         blush: { DEFAULT: "rgb(var(--color-accent-soft) / <alpha-value>)", deep: "rgb(var(--color-accent) / <alpha-value>)" },
         // Explicit accent token, driven by the couple's chosen theme.
         accent: { DEFAULT: "rgb(var(--color-accent) / <alpha-value>)", soft: "rgb(var(--color-accent-soft) / <alpha-value>)" },
-        ink: { DEFAULT: "#232323", soft: "#6E6E6C" },
+        // Theme-aware text color: automatically flips to a light color in dark mode
+        // (see --color-ink* custom properties in globals.css) so every existing
+        // `text-ink`/`text-ink-soft` class updates without needing per-component edits.
+        ink: { DEFAULT: "rgb(var(--color-ink) / <alpha-value>)", soft: "rgb(var(--color-ink-soft) / <alpha-value>)" },
         bezel: "#232323",
         "cream-dark": "#141414",
         "paper-dark": "#1C1C1C",

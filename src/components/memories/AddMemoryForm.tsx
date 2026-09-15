@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { addMemory } from "@/app/(app)/memories/actions";
+import { todayIST } from "@/lib/dates";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -13,9 +14,14 @@ function SubmitButton() {
   );
 }
 
-export default function AddMemoryForm() {
-  const [open, setOpen] = useState(false);
+export default function AddMemoryForm({ autoOpen = false, onClose }: { autoOpen?: boolean; onClose?: () => void }) {
+  const [open, setOpen] = useState(autoOpen);
   const formRef = useRef<HTMLFormElement>(null);
+
+  function close() {
+    setOpen(false);
+    onClose?.();
+  }
 
   if (!open) {
     return (
@@ -31,7 +37,7 @@ export default function AddMemoryForm() {
       action={async (formData) => {
         await addMemory(formData);
         formRef.current?.reset();
-        setOpen(false);
+        close();
       }}
       className="card-panel p-5 space-y-3"
     >
@@ -39,7 +45,7 @@ export default function AddMemoryForm() {
       <input name="title" placeholder="Title (optional)" className="input-field" />
       <textarea name="story" placeholder="Tell the story…" className="input-field" rows={3} />
       <div className="grid grid-cols-2 gap-3">
-        <input type="date" name="memoryDate" className="input-field" defaultValue={new Date().toISOString().slice(0, 10)} />
+        <input type="date" name="memoryDate" className="input-field" defaultValue={todayIST()} />
         <input name="location" placeholder="Location (optional)" className="input-field" />
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -55,7 +61,7 @@ export default function AddMemoryForm() {
       <input type="file" name="photos" accept="image/*,video/*" multiple className="input-field !py-2 text-xs" />
       <div className="flex gap-2 pt-1">
         <SubmitButton />
-        <button type="button" onClick={() => setOpen(false)} className="btn-ghost">
+        <button type="button" onClick={close} className="btn-ghost">
           cancel
         </button>
       </div>

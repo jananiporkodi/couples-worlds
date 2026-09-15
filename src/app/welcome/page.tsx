@@ -6,9 +6,9 @@ function WelcomeContent({ from }: { from: string }) {
   const lockHref = `/lock${from ? `?from=${encodeURIComponent(from)}` : ""}`;
 
   return (
-    <div className="min-h-dvh bg-ink flex items-center justify-center p-4 sm:p-8">
+    <div className="min-h-dvh bg-bezel flex items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-3xl bg-cream rounded-3xl overflow-hidden shadow-2xl">
-        <div className="relative w-full aspect-[8/5] bg-ink">
+        <div className="relative w-full aspect-[8/5] bg-bezel">
           {/* eslint-disable-next-line @next/next/no-img-element -- local SVG hero; next/image blocks
               unoptimized SVGs by default, and a static illustration needs no optimization anyway. */}
           <img src="/welcome-scene.svg" alt="" className="w-full h-full object-cover" />

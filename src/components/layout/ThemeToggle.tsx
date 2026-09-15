@@ -21,7 +21,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggle}
-      className="btn-ghost !px-3 !py-2 text-base"
+      className="relative w-9 h-9 flex items-center justify-center rounded-full bg-paper/90 dark:bg-paper-dark/90 backdrop-blur-sm shadow-sm border border-black/[0.06] dark:border-white/10 hover:bg-black/[0.04] dark:hover:bg-white/5 transition text-base"
       aria-label="Toggle dark mode"
       title="Toggle dark mode"
     >

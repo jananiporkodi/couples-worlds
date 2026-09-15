@@ -124,7 +124,7 @@ function TodoRow({
         onClick={() => startTransition(() => toggleTodoStatus(todo.id, !isDone))}
         disabled={pending}
         className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center text-[11px] ${
-          isDone ? "bg-ink border-ink text-white" : "border-ink/30"
+          isDone ? "bg-bezel border-bezel text-white" : "border-ink/30"
         }`}
         aria-label={isDone ? "Mark as not done" : "Mark as done"}
       >

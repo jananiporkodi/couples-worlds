@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { uploadManyMediaFiles } from "@/lib/storage";
+import { notifyOtherPartner, getActorName } from "@/lib/push";
 import type { PartnerAssignee, PlanStatus } from "@/lib/types";
 
 export async function addPlan(formData: FormData) {
@@ -34,7 +35,10 @@ export async function addPlan(formData: FormData) {
   if (error) throw error;
 
   revalidatePath("/plans");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
+
+  const actorName = await getActorName();
+  await notifyOtherPartner({ title: `${actorName} planned something`, body: title, url: "/plans" });
 }
 
 export async function markPlanStatus(planId: string, status: PlanStatus) {
@@ -44,7 +48,57 @@ export async function markPlanStatus(planId: string, status: PlanStatus) {
   if (error) throw error;
 
   revalidatePath("/plans");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
+}
+
+/** Full edit of an existing plan's details (everything except its status/memory link, which have their own actions). */
+export async function updatePlan(formData: FormData) {
+  const planId = String(formData.get("planId") ?? "").trim();
+  if (!planId) return;
+
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const planDate = String(formData.get("planDate") ?? "").trim();
+  const startTime = String(formData.get("startTime") ?? "").trim() || null;
+  const endTime = String(formData.get("endTime") ?? "").trim() || null;
+  const person = (String(formData.get("person") ?? "both").trim() || "both") as PartnerAssignee;
+  const category = String(formData.get("category") ?? "").trim() || null;
+  const location = String(formData.get("location") ?? "").trim() || null;
+  const reminderRaw = String(formData.get("reminderMinutesBefore") ?? "").trim();
+  const reminderMinutesBefore = reminderRaw ? Number(reminderRaw) : null;
+
+  if (!title || !planDate) return;
+
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase
+    .from("plans")
+    .update({
+      title,
+      description,
+      plan_date: planDate,
+      start_time: startTime,
+      end_time: endTime,
+      person,
+      category,
+      location,
+      reminder_minutes_before: reminderMinutesBefore,
+    })
+    .eq("id", planId);
+  if (error) throw error;
+
+  revalidatePath("/plans");
+  revalidatePath("/", "layout");
+}
+
+/** Moves a plan to a different date. Since it's being rescheduled rather than resolved, this also clears any missed/cancelled status back to "planned". */
+export async function reschedulePlan(planId: string, newDate: string) {
+  if (!planId || !newDate) return;
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase.from("plans").update({ plan_date: newDate, status: "planned" }).eq("id", planId);
+  if (error) throw error;
+
+  revalidatePath("/plans");
+  revalidatePath("/", "layout");
 }
 
 export async function deletePlan(planId: string) {
@@ -54,7 +108,7 @@ export async function deletePlan(planId: string) {
   if (error) throw error;
 
   revalidatePath("/plans");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /** Converts a past plan into a Memory, carrying over title/date/time/location/notes/people, then linking the two records together. */
@@ -109,5 +163,5 @@ export async function convertPlanToMemory(formData: FormData) {
   revalidatePath("/plans");
   revalidatePath("/memories");
   revalidatePath("/gallery");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }

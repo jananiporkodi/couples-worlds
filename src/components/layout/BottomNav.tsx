@@ -31,6 +31,14 @@ export default function BottomNav() {
                 {item.label}
               </Link>
             ))}
+            <Link
+              href="/settings"
+              onClick={() => setMoreOpen(false)}
+              className="flex flex-col items-center gap-1 text-[11px] font-semibold text-ink-soft"
+            >
+              <span className="text-xl">⚙️</span>
+              Settings
+            </Link>
           </div>
         </div>
       )}

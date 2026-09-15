@@ -11,6 +11,17 @@
     /* Default corner style (Soft rounded). Overridden by [data-corner="classic"] below. */
     --radius-panel: 1rem;
     --radius-input: 0.75rem;
+    /* Text color - flips light in dark mode below so every text-ink/text-ink-soft
+       class stays readable. Note: solid "selected pill" backgrounds (bg-ink +
+       text-white) intentionally use the separate, constant `bezel` color instead,
+       so they don't go pale-on-pale when this flips. */
+    --color-ink: 35 35 35;
+    --color-ink-soft: 110 110 108;
+  }
+
+  html.dark {
+    --color-ink: 237 237 234;
+    --color-ink-soft: 168 168 164;
   }
 
   html[data-theme="sage"] {
@@ -69,7 +80,7 @@
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink text-white font-bold px-5 py-3 shadow-[0_6px_14px_rgba(35,35,35,0.18)] transition active:scale-95;
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-bezel text-white font-bold px-5 py-3 shadow-[0_6px_14px_rgba(35,35,35,0.18)] transition active:scale-95;
   }
 
   .btn-ghost {

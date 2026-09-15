@@ -1,6 +1,6 @@
 import { getTimelineFeed } from "@/lib/data";
 import TimelineItem from "@/components/timeline/TimelineItem";
-import AddTimelineEventForm from "@/components/timeline/AddTimelineEventForm";
+import TimelineAddButtons from "@/components/timeline/TimelineAddButtons";
 
 export const dynamic = "force-dynamic";
 
@@ -10,10 +10,12 @@ export default async function TimelinePage() {
   return (
     <div>
       <p className="font-hand text-4xl md:text-5xl leading-none mb-1">Our journey 📅</p>
-      <p className="text-sm text-ink-soft mb-6">the chronological story of us — milestones and memories together</p>
+      <p className="text-sm text-ink-soft mb-6">
+        the chronological story of us — not everything has to be a milestone, add a quick memory too
+      </p>
 
       <div className="mb-8">
-        <AddTimelineEventForm />
+        <TimelineAddButtons />
       </div>
 
       {feed.length === 0 ? (

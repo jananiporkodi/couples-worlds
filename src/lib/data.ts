@@ -1,19 +1,35 @@
 import "server-only";
+import { cookies } from "next/headers";
 import { getSupabaseServerClient } from "./supabase/server";
-import { dayOfYearIndex, daysUntil, nextAnniversary, ordinal } from "./dates";
+import { dayOfYearIndex, daysUntil, nextAnniversary, ordinal, todayIST } from "./dates";
+import { PARTNER_COOKIE_NAME, isValidPartnerId } from "./auth";
 import type {
   BucketItem,
   Memory,
   GalleryMedia,
   Note,
   TimelineEvent,
-  LoveJarEntry,
   Setting,
   Countdown,
   Plan,
   Todo,
   Place,
+  Expense,
 } from "./types";
+
+/** How many kisses the current device's partner has received in total - shown as a little badge on the kiss button. */
+export async function getReceivedKissCount(): Promise<number> {
+  const actor = cookies().get(PARTNER_COOKIE_NAME)?.value;
+  if (!isValidPartnerId(actor)) return 0;
+
+  const supabase = getSupabaseServerClient();
+  const { count, error } = await supabase
+    .from("kisses")
+    .select("id", { count: "exact", head: true })
+    .eq("receiver_id", actor);
+  if (error) return 0;
+  return count ?? 0;
+}
 
 export async function getSettingsMap(): Promise<Record<string, unknown>> {
   const supabase = getSupabaseServerClient();
@@ -114,20 +130,15 @@ export async function getTimelineEvents(): Promise<TimelineEvent[]> {
   return data as TimelineEvent[];
 }
 
-export async function getLoveJarEntries(): Promise<LoveJarEntry[]> {
+export async function getExpenses(): Promise<Expense[]> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
-    .from("love_jar")
+    .from("expenses")
     .select("*")
+    .order("expense_date", { ascending: false })
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data as LoveJarEntry[];
-}
-
-export async function getRandomLoveJarEntry(): Promise<LoveJarEntry | null> {
-  const entries = await getLoveJarEntries();
-  if (entries.length === 0) return null;
-  return entries[dayOfYearIndex(entries.length)];
+  return data as Expense[];
 }
 
 export async function getCountdowns(): Promise<Countdown[]> {
@@ -186,15 +197,24 @@ export type { ActivityItem } from "./activity-meta";
 export { activityMeta } from "./activity-meta";
 import type { ActivityItem } from "./activity-meta";
 
-/** Latest activity across memories, plans, bucket list, and notes - powers the notifications bell. Best-effort: a failed sub-query just yields fewer items rather than breaking the whole feed. */
+/** Latest activity across memories, plans, bucket list, notes, gallery, to-dos, and places - powers the notifications bell. Best-effort: a failed sub-query just yields fewer items rather than breaking the whole feed. */
 export async function getRecentActivity(limit = 5): Promise<ActivityItem[]> {
   const supabase = getSupabaseServerClient();
 
-  const [memoriesRes, plansRes, bucketRes, notesRes] = await Promise.all([
+  const [memoriesRes, plansRes, bucketRes, notesRes, galleryRes, todosRes, placesRes, expensesRes] = await Promise.all([
     supabase.from("memories").select("id,title,created_at").order("created_at", { ascending: false }).limit(limit),
     supabase.from("plans").select("id,title,created_at").order("created_at", { ascending: false }).limit(limit),
     supabase.from("bucket_items").select("id,title,created_at").order("created_at", { ascending: false }).limit(limit),
     supabase.from("notes").select("id,body,created_at").order("created_at", { ascending: false }).limit(limit),
+    supabase
+      .from("gallery")
+      .select("id,caption,memory_id,created_at")
+      .is("memory_id", null)
+      .order("created_at", { ascending: false })
+      .limit(limit),
+    supabase.from("todos").select("id,title,created_at").order("created_at", { ascending: false }).limit(limit),
+    supabase.from("places").select("id,name,created_at").order("created_at", { ascending: false }).limit(limit),
+    supabase.from("expenses").select("id,title,created_at").order("created_at", { ascending: false }).limit(limit),
   ]);
 
   const items: ActivityItem[] = [];
@@ -209,6 +229,18 @@ export async function getRecentActivity(limit = 5): Promise<ActivityItem[]> {
   }
   for (const n of notesRes.data ?? []) {
     items.push({ id: `note-${n.id}`, kind: "note", title: n.body.slice(0, 60), createdAt: n.created_at, href: "/notes" });
+  }
+  for (const g of galleryRes.data ?? []) {
+    items.push({ id: `gallery-${g.id}`, kind: "gallery", title: g.caption || "A new photo", createdAt: g.created_at, href: "/gallery" });
+  }
+  for (const t of todosRes.data ?? []) {
+    items.push({ id: `todo-${t.id}`, kind: "todo", title: t.title, createdAt: t.created_at, href: "/todos" });
+  }
+  for (const pl of placesRes.data ?? []) {
+    items.push({ id: `place-${pl.id}`, kind: "place", title: pl.name, createdAt: pl.created_at, href: "/places" });
+  }
+  for (const ex of expensesRes.data ?? []) {
+    items.push({ id: `expense-${ex.id}`, kind: "expense", title: ex.title, createdAt: ex.created_at, href: "/expenses" });
   }
 
   items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
@@ -344,6 +376,59 @@ export async function getStats() {
     countriesCount: countries.size,
     placesCount: places.count ?? 0,
   };
+}
+
+/** Both partners' mood check-in for today (IST), for the Home "how are you feeling" widget. */
+export async function getTodaysMoods(): Promise<{ a: string | null; b: string | null }> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("daily_moods")
+    .select("partner_id, mood")
+    .eq("mood_date", todayIST());
+  if (error) throw error;
+
+  const rows = (data ?? []) as { partner_id: "partner_a" | "partner_b"; mood: string }[];
+  return {
+    a: rows.find((r) => r.partner_id === "partner_a")?.mood ?? null,
+    b: rows.find((r) => r.partner_id === "partner_b")?.mood ?? null,
+  };
+}
+
+export interface WeeklyRecapItem {
+  kind: "memory" | "note" | "gallery";
+  title: string;
+  createdAt: string;
+}
+
+/** What got added in the last N days, for the Home "This week in us" Friday recap card. */
+export async function getWeeklyRecap(days = 7): Promise<WeeklyRecapItem[]> {
+  const supabase = getSupabaseServerClient();
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  const [memoriesRes, notesRes, galleryRes] = await Promise.all([
+    supabase.from("memories").select("id,title,created_at").gte("created_at", since).order("created_at", { ascending: false }),
+    supabase.from("notes").select("id,body,created_at").gte("created_at", since).order("created_at", { ascending: false }),
+    supabase
+      .from("gallery")
+      .select("id,caption,memory_id,created_at")
+      .is("memory_id", null)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const items: WeeklyRecapItem[] = [];
+  for (const m of memoriesRes.data ?? []) {
+    items.push({ kind: "memory", title: m.title || "A memory", createdAt: m.created_at });
+  }
+  for (const n of notesRes.data ?? []) {
+    items.push({ kind: "note", title: n.body.slice(0, 60), createdAt: n.created_at });
+  }
+  for (const g of galleryRes.data ?? []) {
+    items.push({ kind: "gallery", title: g.caption || "A new photo", createdAt: g.created_at });
+  }
+
+  items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return items;
 }
 
 export async function getPartnerNames(): Promise<{ a: string; b: string }> {

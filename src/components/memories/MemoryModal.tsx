@@ -150,7 +150,7 @@ export default function MemoryModal({
               {memory.tags?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {memory.tags.map((tag) => (
-                    <span key={tag} className="chip bg-lavender text-ink text-[11px]">
+                    <span key={tag} className="chip bg-lavender text-bezel text-[11px]">
                       #{tag}
                     </span>
                   ))}

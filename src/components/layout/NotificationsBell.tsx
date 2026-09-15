@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { ActivityItem } from "@/lib/activity-meta";
 import { activityMeta } from "@/lib/activity-meta";
+
+const LAST_SEEN_KEY = "olw-notifications-last-seen";
 
 function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -18,16 +20,43 @@ function timeAgo(iso: string): string {
 
 export default function NotificationsBell({ items }: { items: ActivityItem[] }) {
   const [open, setOpen] = useState(false);
+  const [hasUnseen, setHasUnseen] = useState(false);
+  const newestCreatedAt = items[0]?.createdAt;
+
+  useEffect(() => {
+    if (!newestCreatedAt) {
+      setHasUnseen(false);
+      return;
+    }
+    let lastSeen: string | null = null;
+    try {
+      lastSeen = localStorage.getItem(LAST_SEEN_KEY);
+    } catch {}
+    setHasUnseen(!lastSeen || new Date(newestCreatedAt).getTime() > new Date(lastSeen).getTime());
+  }, [newestCreatedAt]);
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next) {
+      setHasUnseen(false);
+      try {
+        localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString());
+      } catch {}
+    }
+  }
 
   return (
     <div className="relative">
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         aria-label="Recent activity"
         className="relative w-9 h-9 flex items-center justify-center rounded-full bg-paper/90 dark:bg-paper-dark/90 backdrop-blur-sm shadow-sm border border-black/[0.06] dark:border-white/10 hover:bg-black/[0.04] dark:hover:bg-white/5 transition"
       >
         <span className="text-lg">🔔</span>
-        {items.length > 0 && <span className="absolute top-1 right-1.5 w-2 h-2 rounded-full bg-accent" />}
+        {hasUnseen && (
+          <span className="absolute top-1 right-1.5 w-2.5 h-2.5 rounded-full bg-red-600 ring-2 ring-paper dark:ring-paper-dark animate-pulse" />
+        )}
       </button>
 
       {open && (

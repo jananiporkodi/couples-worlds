@@ -8,6 +8,8 @@ import { geocodePlace } from "@/lib/geocode";
 import { sendEmail } from "@/lib/mailer";
 import { getSettingsMap } from "@/lib/data";
 import { PARTNER_COOKIE_NAME, isValidPartnerId } from "@/lib/auth";
+import { notifyOtherPartner, getActorName } from "@/lib/push";
+import { todayIST } from "@/lib/dates";
 
 /** Emails the OTHER partner when one of them adds a memory - a no-op if identity/emails are not set up. */
 async function notifyOtherPartnerOfMemory(memoryTitle: string) {
@@ -39,7 +41,7 @@ export async function addMemory(formData: FormData) {
   const story = String(formData.get("story") ?? "").trim() || null;
   const location = String(formData.get("location") ?? "").trim() || null;
   const mood = String(formData.get("mood") ?? "").trim() || null;
-  const memoryDate = String(formData.get("memoryDate") ?? "").trim() || new Date().toISOString().slice(0, 10);
+  const memoryDate = String(formData.get("memoryDate") ?? "").trim() || todayIST();
   const tagsRaw = String(formData.get("tags") ?? "").trim();
   const tags = tagsRaw
     ? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean)
@@ -77,9 +79,15 @@ export async function addMemory(formData: FormData) {
 
   revalidatePath("/memories");
   revalidatePath("/gallery");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 
   await notifyOtherPartnerOfMemory(title || "");
+  const actorName = await getActorName();
+  await notifyOtherPartner({
+    title: `${actorName} added a memory`,
+    body: title || "Take a look!",
+    url: `/memories?open=${memory.id}`,
+  });
 }
 
 /** Resolves the place a memory should link to: an existing place id, a brand-new place (best-effort geocoded), or none. */
@@ -180,7 +188,7 @@ export async function updateMemory(formData: FormData) {
   revalidatePath("/memories");
   revalidatePath("/gallery");
   revalidatePath("/places");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function toggleMemoryFavorite(memoryId: string, value: boolean) {
@@ -190,7 +198,7 @@ export async function toggleMemoryFavorite(memoryId: string, value: boolean) {
   if (error) throw error;
 
   revalidatePath("/memories");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function deleteMemory(memoryId: string) {
@@ -202,7 +210,7 @@ export async function deleteMemory(memoryId: string) {
 
   revalidatePath("/memories");
   revalidatePath("/gallery");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function reactToMemory(memoryId: string, emoji: string) {

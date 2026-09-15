@@ -31,7 +31,7 @@ export default function SettingsTabs({
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-1.5 text-xs font-semibold transition ${
-              tab === t.key ? "bg-ink text-white" : "text-ink-soft hover:bg-black/[0.03] dark:hover:bg-white/5"
+              tab === t.key ? "bg-bezel text-white" : "text-ink-soft hover:bg-black/[0.03] dark:hover:bg-white/5"
             }`}
           >
             {t.label}

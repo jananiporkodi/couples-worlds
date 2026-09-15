@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/nav";
-import ThemeToggle from "./ThemeToggle";
 import MoonMark from "./MoonMark";
 
 export default function SidebarNav() {
@@ -45,10 +44,7 @@ export default function SidebarNav() {
             lock this world
           </button>
         </form>
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] text-ink-soft">made with love</span>
-          <ThemeToggle />
-        </div>
+        <span className="text-[11px] text-ink-soft block">made with love</span>
       </div>
     </aside>
   );

@@ -13,9 +13,14 @@ function SubmitButton() {
   );
 }
 
-export default function AddTimelineEventForm() {
-  const [open, setOpen] = useState(false);
+export default function AddTimelineEventForm({ autoOpen = false, onClose }: { autoOpen?: boolean; onClose?: () => void }) {
+  const [open, setOpen] = useState(autoOpen);
   const formRef = useRef<HTMLFormElement>(null);
+
+  function close() {
+    setOpen(false);
+    onClose?.();
+  }
 
   if (!open) {
     return (
@@ -31,7 +36,7 @@ export default function AddTimelineEventForm() {
       action={async (formData) => {
         await addTimelineEvent(formData);
         formRef.current?.reset();
-        setOpen(false);
+        close();
       }}
       className="card-panel p-5 space-y-3"
     >
@@ -51,7 +56,7 @@ export default function AddTimelineEventForm() {
       <input type="file" name="photos" accept="image/*" multiple className="input-field !py-2 text-xs" />
       <div className="flex gap-2 pt-1">
         <SubmitButton />
-        <button type="button" onClick={() => setOpen(false)} className="btn-ghost">
+        <button type="button" onClick={close} className="btn-ghost">
           cancel
         </button>
       </div>

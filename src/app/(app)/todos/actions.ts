@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { notifyOtherPartner, getActorName } from "@/lib/push";
 import type { PartnerAssignee, TodoPriority } from "@/lib/types";
 
 export async function addTodo(formData: FormData) {
@@ -23,7 +24,10 @@ export async function addTodo(formData: FormData) {
   if (error) throw error;
 
   revalidatePath("/todos");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
+
+  const actorName = await getActorName();
+  await notifyOtherPartner({ title: `${actorName} added a to-do`, body: title, url: "/todos" });
 }
 
 export async function updateTodo(formData: FormData) {
@@ -43,7 +47,7 @@ export async function updateTodo(formData: FormData) {
   if (error) throw error;
 
   revalidatePath("/todos");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function toggleTodoStatus(todoId: string, done: boolean) {
@@ -56,7 +60,7 @@ export async function toggleTodoStatus(todoId: string, done: boolean) {
   if (error) throw error;
 
   revalidatePath("/todos");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function deleteTodo(todoId: string) {
@@ -66,7 +70,7 @@ export async function deleteTodo(todoId: string) {
   if (error) throw error;
 
   revalidatePath("/todos");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function reorderTodos(orderedIds: string[]) {
@@ -95,5 +99,5 @@ export async function convertTodoToPlan(todoId: string, planDate: string) {
 
   revalidatePath("/todos");
   revalidatePath("/plans");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
