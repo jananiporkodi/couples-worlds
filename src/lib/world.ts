@@ -3,7 +3,7 @@ import { createHash } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "./supabase/server";
-import { SESSION_COOKIE_NAME } from "./auth";
+import { SESSION_COOKIE_NAME, isValidSessionValue } from "./auth";
 
 export type WorldStatus = "created" | "onboarding" | "active" | "disabled" | "archived";
 
@@ -62,7 +62,7 @@ export async function verifyPasscodeAndGetWorld(passcode: string): Promise<World
 /** The signed-in world, or null if there's no session or it no longer resolves to an active world (disabled/archived/deleted). */
 export async function getCurrentWorld(): Promise<World | null> {
   const worldId = cookies().get(SESSION_COOKIE_NAME)?.value;
-  if (!worldId) return null;
+  if (!isValidSessionValue(worldId)) return null;
 
   const supabase = getSupabaseServerClient();
   const { data } = await supabase.from("worlds").select("*").eq("id", worldId).eq("status", "active").single();

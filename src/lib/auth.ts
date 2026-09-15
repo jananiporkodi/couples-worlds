@@ -17,3 +17,16 @@ export function isValidPartnerId(value: string | undefined | null): value is Par
  * (verifyPasscodeAndGetWorld) since it needs DB access; this file stays
  * dependency-free so it's safe to import from anywhere (client or server).
  */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * True if a session cookie's raw value looks like a real world id, as
+ * opposed to a stale value left over from before this migration - when the
+ * cookie held the shared passcode itself (e.g. "OurWorld-2026-Cx7q"), not a
+ * uuid. A browser that still has that old cookie from before this deploy
+ * would otherwise pass every "is a session present" check and then crash
+ * the moment that string hits a `uuid` database column.
+ */
+export function isValidSessionValue(value: string | undefined | null): value is string {
+  return !!value && UUID_RE.test(value);
+}
