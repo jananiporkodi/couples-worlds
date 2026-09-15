@@ -14,12 +14,12 @@ import { Pool } from "@neondatabase/serverless";
  * file storage. Every caller elsewhere in the app is unchanged.
  *
  * Supported surface (this is everything the app actually uses):
- *   .from(table).select(cols).eq(col, val).in(col, vals).order(col, {ascending})
- *     .limit(n).single()
+ *   .from(table).select(cols).eq(col, val).in(col, vals).gte(col, val)
+ *     .is(col, val).order(col, {ascending}).limit(n).single()
  *   .from(table).insert(row | row[]).select(cols).single()
  *   .from(table).update(partial).eq(col, val).select(cols)
  *   .from(table).upsert(row, { onConflict: col }).select(cols)
- *   .from(table).delete().eq(col, val).in(col, vals)
+ *   .from(table).delete().eq(col, val).in(col, vals).is(col, val)
  *   .storage.from(bucket).upload(path, buffer, { contentType, upsert })
  *   .storage.from(bucket).getPublicUrl(path)
  *
@@ -48,7 +48,7 @@ function getPool(): Pool {
   return pool;
 }
 
-type FilterOp = "=" | "in";
+type FilterOp = "=" | "in" | "is" | "gte";
 type Filter = { col: string; op: FilterOp; val: unknown };
 type Mode = "select" | "insert" | "update" | "upsert" | "delete";
 type Row = Record<string, unknown>;
@@ -88,6 +88,14 @@ class QueryBuilder<T = any> implements PromiseLike<PostgrestResult<T>> {
     this.filters.push({ col, op: "in", val: vals });
     return this;
   }
+  is(col: string, val: null | boolean) {
+    this.filters.push({ col, op: "is", val });
+    return this;
+  }
+  gte(col: string, val: unknown) {
+    this.filters.push({ col, op: "gte", val });
+    return this;
+  }
   order(col: string, opts?: { ascending?: boolean }) {
     this.orderCol = col;
     this.orderAsc = opts?.ascending ?? true;
@@ -125,8 +133,15 @@ class QueryBuilder<T = any> implements PromiseLike<PostgrestResult<T>> {
   private buildWhere(params: unknown[]): string {
     if (this.filters.length === 0) return "";
     const clauses = this.filters.map((f) => {
+      if (f.op === "is") {
+        // `.is(col, null)` -> IS NULL; `.is(col, true/false)` -> IS TRUE/FALSE. No params consumed.
+        if (f.val === null) return `${f.col} IS NULL`;
+        return `${f.col} IS ${f.val ? "TRUE" : "FALSE"}`;
+      }
       params.push(f.val);
-      return f.op === "in" ? `${f.col} = ANY($${params.length})` : `${f.col} = $${params.length}`;
+      if (f.op === "in") return `${f.col} = ANY($${params.length})`;
+      if (f.op === "gte") return `${f.col} >= $${params.length}`;
+      return `${f.col} = $${params.length}`;
     });
     return ` WHERE ${clauses.join(" AND ")}`;
   }
