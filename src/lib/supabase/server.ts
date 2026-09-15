@@ -1,5 +1,7 @@
 import "server-only";
 import { Pool } from "@neondatabase/serverless";
+import { cookies } from "next/headers";
+import { SESSION_COOKIE_NAME } from "../auth";
 
 /**
  * ---------------------------------------------------------------------------
@@ -31,6 +33,28 @@ import { Pool } from "@neondatabase/serverless";
  *     in the original Supabase project was `USING (true)` for the anon role
  *     (i.e. no real per-row security), so access control has always lived
  *     at the app layer (the passcode gate in src/middleware.ts), not the DB.
+ *
+ * ---------------------------------------------------------------------------
+ * MULTI-TENANT (world_id) SCOPING - Phase 2
+ * ---------------------------------------------------------------------------
+ * Every couple's data now lives behind a `worlds` row, and every content
+ * table has a NOT NULL `world_id` column. Rather than thread a worldId
+ * parameter through every one of the ~60 functions in data.ts and every
+ * actions.ts file (a huge, easy-to-get-wrong blast radius across dozens of
+ * files), that scoping is applied once, centrally, right here: any query
+ * against a table in WORLD_SCOPED_TABLES automatically gets `world_id`
+ * added to its WHERE clause (select/update/delete) or its inserted row
+ * (insert/upsert). No call site anywhere else in the app needs to know
+ * world_id exists - exactly the same "don't touch call sites" philosophy
+ * the rest of this shim already uses for the Supabase -> Neon migration.
+ *
+ * The world_id itself comes from the session cookie (src/lib/auth.ts +
+ * src/lib/world.ts) - the cookie's value *is* the signed-in world's id, so
+ * reading it here needs no extra DB round trip. See resolveWorldId() below
+ * for the one exception (reading settings before login, for the lock
+ * screen) and getCurrentWorldId() in src/lib/world.ts for the deeper check
+ * (does this id still resolve to an *active* world) that every authenticated
+ * page relies on via the (app) route group's layout.
  * ---------------------------------------------------------------------------
  */
 
@@ -46,6 +70,80 @@ function getPool(): Pool {
   }
   pool = new Pool({ connectionString });
   return pool;
+}
+
+// Every table except `worlds` itself is scoped per-world.
+const WORLD_SCOPED_TABLES = new Set([
+  "bucket_items",
+  "countdowns",
+  "daily_moods",
+  "daily_questions",
+  "expenses",
+  "gallery",
+  "kisses",
+  "love_jar",
+  "memories",
+  "moods",
+  "notes",
+  "places",
+  "plans",
+  "playlists",
+  "push_subscriptions",
+  "settings",
+  "timeline_events",
+  "todos",
+  "wishlist",
+]);
+
+// A couple of world-scoped tables have their real uniqueness constraint as
+// (world_id, <original column(s)>) rather than <original column(s)> alone
+// (see the Phase 1/2 migrations) - their upsert's ON CONFLICT target needs
+// world_id prepended to match. Others (e.g. push_subscriptions, unique on
+// endpoint alone - a device's push endpoint doesn't vary by world) keep
+// whatever conflict target the caller passed in unchanged.
+const CONFLICT_PREPEND_WORLD = new Set(["settings", "daily_moods"]);
+
+/**
+ * The signed-in world's id, straight from the session cookie - no DB lookup,
+ * since the cookie's value already *is* the world id (see src/lib/world.ts).
+ * Returns null when there's no session (not logged in yet, or a Server
+ * Component rendering outside a request's cookie context).
+ */
+function getSessionWorldId(): string | null {
+  try {
+    return cookies().get(SESSION_COOKIE_NAME)?.value ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolves which world a query should be scoped to. Writes always require a
+ * real session - there is no couple-neutral way to save a memory, note, etc.,
+ * so a missing cookie there is a bug (or a forged request past middleware)
+ * and fails loudly rather than guessing. Reads get one narrow fallback: the
+ * root layout and the /lock screen read `settings` (for partner names/theme)
+ * before the visitor has logged in at all. Until Phase 3/4 give each world
+ * its own URL, there's no slug to resolve there either, so this falls back
+ * to the single active world - correct today (one couple), and this
+ * fallback becomes unreachable once self-serve onboarding (Phase 4) and
+ * per-world routing (Phase 3) land, since every page will have a real slug
+ * or session by then.
+ */
+async function resolveWorldId(mode: Mode): Promise<string | null> {
+  const fromCookie = getSessionWorldId();
+  if (fromCookie) return fromCookie;
+
+  if (mode !== "select") {
+    throw new Error(
+      "No active world session - refusing to write world-scoped data without one. (Are you calling this outside the /lock flow?)"
+    );
+  }
+
+  const result = await getPool().query<{ id: string }>(
+    `SELECT id FROM worlds WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`
+  );
+  return result.rows[0]?.id ?? null;
 }
 
 type FilterOp = "=" | "in" | "is" | "gte";
@@ -71,8 +169,11 @@ class QueryBuilder<T = any> implements PromiseLike<PostgrestResult<T>> {
   private wantCount = false;
   private payload?: Row | Row[];
   private conflictCol?: string;
+  private readonly scoped: boolean;
 
-  constructor(private table: string) {}
+  constructor(private table: string) {
+    this.scoped = WORLD_SCOPED_TABLES.has(table);
+  }
 
   select(cols: string = "*", opts?: { count?: "exact" | "planned" | "estimated"; head?: boolean }) {
     this.selectCols = cols;
@@ -130,9 +231,9 @@ class QueryBuilder<T = any> implements PromiseLike<PostgrestResult<T>> {
     return this;
   }
 
-  private buildWhere(params: unknown[]): string {
-    if (this.filters.length === 0) return "";
-    const clauses = this.filters.map((f) => {
+  private buildWhere(params: unknown[], filters: Filter[]): string {
+    if (filters.length === 0) return "";
+    const clauses = filters.map((f) => {
       if (f.op === "is") {
         // `.is(col, null)` -> IS NULL; `.is(col, true/false)` -> IS TRUE/FALSE. No params consumed.
         if (f.val === null) return `${f.col} IS NULL`;
@@ -151,16 +252,22 @@ class QueryBuilder<T = any> implements PromiseLike<PostgrestResult<T>> {
       const params: unknown[] = [];
       let text: string;
 
+      const worldId = this.scoped ? await resolveWorldId(this.mode) : null;
+      const effectiveFilters: Filter[] =
+        this.scoped && worldId ? [{ col: "world_id", op: "=", val: worldId }, ...this.filters] : this.filters;
+
       if (this.mode === "select") {
         text = `SELECT ${this.selectCols} FROM ${this.table}`;
-        text += this.buildWhere(params);
+        text += this.buildWhere(params, effectiveFilters);
         if (this.orderCol) text += ` ORDER BY ${this.orderCol} ${this.orderAsc ? "ASC" : "DESC"}`;
         if (this.limitN != null) {
           params.push(this.limitN);
           text += ` LIMIT $${params.length}`;
         }
       } else if (this.mode === "insert") {
-        const rows = Array.isArray(this.payload) ? this.payload : [this.payload as Row];
+        const rows = (Array.isArray(this.payload) ? this.payload : [this.payload as Row]).map((row) =>
+          this.scoped && worldId ? { world_id: worldId, ...row } : row
+        );
         const cols = Object.keys(rows[0]);
         const valuesSql = rows
           .map((row) => `(${cols.map((c) => { params.push(row[c]); return `$${params.length}`; }).join(", ")})`)
@@ -172,19 +279,22 @@ class QueryBuilder<T = any> implements PromiseLike<PostgrestResult<T>> {
         const cols = Object.keys(payload);
         const setSql = cols.map((c) => { params.push(payload[c]); return `${c} = $${params.length}`; }).join(", ");
         text = `UPDATE ${this.table} SET ${setSql}`;
-        text += this.buildWhere(params);
+        text += this.buildWhere(params, effectiveFilters);
         if (this.wantReturning) text += ` RETURNING ${this.selectCols}`;
       } else if (this.mode === "upsert") {
-        const row = this.payload as Row;
+        const row = this.scoped && worldId ? { world_id: worldId, ...(this.payload as Row) } : (this.payload as Row);
         const cols = Object.keys(row);
         const placeholders = cols.map((c) => { params.push(row[c]); return `$${params.length}`; });
-        const conflictCol = this.conflictCol ?? "id";
-        const updateSql = cols.filter((c) => c !== conflictCol).map((c) => `${c} = EXCLUDED.${c}`).join(", ");
-        text = `INSERT INTO ${this.table} (${cols.join(", ")}) VALUES (${placeholders.join(", ")}) ON CONFLICT (${conflictCol}) DO UPDATE SET ${updateSql}`;
+        const baseConflict = this.conflictCol ?? "id";
+        const conflictTarget =
+          this.scoped && worldId && CONFLICT_PREPEND_WORLD.has(this.table) ? `world_id, ${baseConflict}` : baseConflict;
+        const conflictCols = conflictTarget.split(",").map((c) => c.trim());
+        const updateSql = cols.filter((c) => !conflictCols.includes(c)).map((c) => `${c} = EXCLUDED.${c}`).join(", ");
+        text = `INSERT INTO ${this.table} (${cols.join(", ")}) VALUES (${placeholders.join(", ")}) ON CONFLICT (${conflictTarget}) DO UPDATE SET ${updateSql}`;
         if (this.wantReturning) text += ` RETURNING ${this.selectCols}`;
       } else {
         text = `DELETE FROM ${this.table}`;
-        text += this.buildWhere(params);
+        text += this.buildWhere(params, effectiveFilters);
         if (this.wantReturning) text += ` RETURNING ${this.selectCols}`;
       }
 

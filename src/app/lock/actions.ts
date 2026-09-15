@@ -3,13 +3,13 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
-  isCorrectPasscode,
   isValidPartnerId,
   SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_SECONDS,
   PARTNER_COOKIE_NAME,
   PARTNER_MAX_AGE_SECONDS,
 } from "@/lib/auth";
+import { verifyPasscodeAndGetWorld } from "@/lib/world";
 
 export interface LoginState {
   error?: string;
@@ -20,18 +20,12 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
   const redirectTo = String(formData.get("redirectTo") ?? "/");
   const partner = String(formData.get("partner") ?? "");
 
-  let correct = false;
-  try {
-    correct = isCorrectPasscode(passcode);
-  } catch {
-    return { error: "The app isn't configured yet — set APP_PASSCODE in .env.local." };
-  }
-
-  if (!correct) {
+  const world = await verifyPasscodeAndGetWorld(passcode);
+  if (!world) {
     return { error: "That's not quite it — try again." };
   }
 
-  cookies().set(SESSION_COOKIE_NAME, passcode.trim(), {
+  cookies().set(SESSION_COOKIE_NAME, world.id, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
