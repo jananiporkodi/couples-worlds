@@ -25,7 +25,7 @@ const WORLD_PATH_RE = /^\/w\/([^/]+)(\/.*)?$/;
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/_next") || pathname === "/favicon.ico" || pathname.startsWith("/api/")) {
+  if (pathname.startsWith("/_next") || pathname === "/favicon.ico" || pathname.startsWith("/api/") || pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
 
