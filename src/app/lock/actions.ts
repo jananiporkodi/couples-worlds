@@ -9,7 +9,7 @@ import {
   PARTNER_COOKIE_NAME,
   PARTNER_MAX_AGE_SECONDS,
 } from "@/lib/auth";
-import { verifyPasscodeAndGetWorld } from "@/lib/world";
+import { verifyPasscodeForSlug } from "@/lib/world";
 
 export interface LoginState {
   error?: string;
@@ -19,8 +19,9 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
   const passcode = String(formData.get("passcode") ?? "");
   const redirectTo = String(formData.get("redirectTo") ?? "/");
   const partner = String(formData.get("partner") ?? "");
+  const slug = String(formData.get("slug") ?? "our-world");
 
-  const world = await verifyPasscodeAndGetWorld(passcode);
+  const world = await verifyPasscodeForSlug(slug, passcode);
   if (!world) {
     return { error: "That's not quite it — try again." };
   }
@@ -43,5 +44,5 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     });
   }
 
-  redirect(redirectTo || "/");
+  redirect(redirectTo || `/w/${slug}`);
 }

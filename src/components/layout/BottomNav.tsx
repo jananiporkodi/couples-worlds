@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS, BOTTOM_NAV_PRIMARY } from "@/lib/nav";
 

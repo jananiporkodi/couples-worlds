@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { motion, AnimatePresence } from "framer-motion";
 import type { GalleryMedia } from "@/lib/types";
 import { updateGalleryPhoto, deleteGalleryPhoto } from "@/app/(app)/gallery/actions";

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/nav";
 import MoonMark from "./MoonMark";

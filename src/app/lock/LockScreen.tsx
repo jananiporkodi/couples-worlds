@@ -18,10 +18,12 @@ function SubmitButton() {
 }
 
 export default function LockScreen({
+  slug,
   redirectTo,
   partnerNames,
   savedPartner,
 }: {
+  slug: string;
   redirectTo: string;
   partnerNames: { a: string; b: string };
   savedPartner: "partner_a" | "partner_b" | null;
@@ -60,6 +62,7 @@ export default function LockScreen({
         <p className="text-xs italic text-ink-soft mb-6">enter our secret ❤️</p>
 
         <form action={formAction} className="space-y-3">
+          <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="redirectTo" value={redirectTo} />
           <input type="hidden" name="partner" value={partner} />
 

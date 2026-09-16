@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { useFormStatus } from "react-dom";
 import type { GalleryMedia } from "@/lib/types";
 import Lightbox from "./Lightbox";

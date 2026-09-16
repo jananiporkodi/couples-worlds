@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { useFormStatus } from "react-dom";
 import type { Memory, Place } from "@/lib/types";
 import { addPlace, deletePlace, updatePlaceCoords } from "@/app/(app)/places/actions";

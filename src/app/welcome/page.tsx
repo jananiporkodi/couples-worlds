@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import MoonMark from "@/components/layout/MoonMark";
 
-function WelcomeContent({ from }: { from: string }) {
-  const lockHref = `/lock${from ? `?from=${encodeURIComponent(from)}` : ""}`;
+function WelcomeContent({ slug, from }: { slug: string; from: string }) {
+  const lockHref = `/w/${slug}/lock${from ? `?from=${encodeURIComponent(from)}` : ""}`;
 
   return (
     <div className="min-h-dvh bg-bezel flex items-center justify-center p-4 sm:p-8">
@@ -34,9 +35,14 @@ function WelcomeContent({ from }: { from: string }) {
 }
 
 export default function WelcomePage({ searchParams }: { searchParams: { from?: string } }) {
+  // The slug comes from the `x-world-slug` header middleware sets on every
+  // /w/{slug}/... request (see src/middleware.ts) - this page is reached
+  // either directly at /w/{slug}/welcome, or via a redirect from the (app)
+  // layout / getCurrentWorldId when there's no valid session yet.
+  const slug = headers().get("x-world-slug") ?? "our-world";
   return (
     <Suspense fallback={null}>
-      <WelcomeContent from={searchParams.from || ""} />
+      <WelcomeContent slug={slug} from={searchParams.from || ""} />
     </Suspense>
   );
 }

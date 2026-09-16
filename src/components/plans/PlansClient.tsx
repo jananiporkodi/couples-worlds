@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { useFormStatus } from "react-dom";
 import type { PartnerAssignee, Plan } from "@/lib/types";
 import { PLAN_CATEGORIES } from "@/lib/types";

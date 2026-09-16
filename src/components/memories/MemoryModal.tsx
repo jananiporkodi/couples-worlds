@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { motion, AnimatePresence } from "framer-motion";
 import type { BucketItem, Memory, Place, Plan } from "@/lib/types";
 import { REACTION_EMOJIS } from "@/lib/types";

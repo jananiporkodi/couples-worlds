@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import type { ActivityItem } from "@/lib/activity-meta";
 import { activityMeta } from "@/lib/activity-meta";
 
