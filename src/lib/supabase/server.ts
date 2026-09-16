@@ -1,7 +1,7 @@
 import "server-only";
 import { Pool } from "@neondatabase/serverless";
 import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME } from "../auth";
+import { SESSION_COOKIE_NAME, isValidSessionValue } from "../auth";
 
 /**
  * ---------------------------------------------------------------------------
@@ -111,7 +111,11 @@ const CONFLICT_PREPEND_WORLD = new Set(["settings", "daily_moods"]);
  */
 function getSessionWorldId(): string | null {
   try {
-    return cookies().get(SESSION_COOKIE_NAME)?.value ?? null;
+    const value = cookies().get(SESSION_COOKIE_NAME)?.value;
+    // A browser that still has a pre-migration session cookie carries the
+    // old shared passcode as its value, not a world id - treat that exactly
+    // like "not signed in" rather than letting it crash a uuid column.
+    return isValidSessionValue(value) ? value : null;
   } catch {
     return null;
   }
